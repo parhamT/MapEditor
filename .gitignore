@@ -10,3 +10,365 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+package mapEditor;
+
+import java.awt.AWTEvent;
+import java.awt.FlowLayout;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.MouseInfo;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintStream;
+
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+
+
+
+
+
+public class Map extends JPanel implements MouseListener,KeyListener,Runnable,MouseMotionListener {
+
+	public BufferedReader input;
+	private int row,mouseEx,mouseEy,x1,y1;
+	public int[][] map,map2;
+	private int[] line;
+	private ImageIcon dusty,tree,grass;
+	private BufferedImage buffer;
+	public Thread a=new Thread(this);
+	private boolean click;
+	public int x,y,mapx,mapy;
+	private String mapS;
+	MyDesk desk;
+	
+	private static final long serialVersionUID = 1L;
+
+	/**
+	 * 
+	 */
+	public Map(MyDesk desk){
+		this.desk=desk;
+		init();
+		CreateMap();
+		if(desk.enter.func.equalsIgnoreCase("create")){
+			CreateMapFile();
+		}
+		readMap();
+		addMouseListener(this);
+		addKeyListener(this);
+		addMouseMotionListener(this);
+		a.start();
+		setFocusable(true);
+	}
+	public void init(){
+		map=new int[50][70];
+		map2=new int[50][70];
+		line=new int[70];
+		x1=0;
+		y1=0;
+		mapx=0;mapy=0;
+		row=0;
+		click=false;
+		if(desk.enter.func.equalsIgnoreCase("create"))
+		mapS="map.txt";
+		else
+			mapS=desk.enter.sb;
+		dusty=new ImageIcon("0.png");
+		buffer = new BufferedImage(700, 500, BufferedImage.TYPE_4BYTE_ABGR);
+		
+	}
+	public void CreateMap(){
+		setSize(700, 500);
+		setLocation(0, 0);
+		setBorder(BorderFactory.createEtchedBorder());		
+	}
+	public void CreateMapFile(){
+		File f = new File("map.txt");
+		if(!f.exists()){
+			try {
+				f.createNewFile();
+				PrintStream out = new PrintStream(f);
+				for(int i=0;i<50;i++){
+						for(int j=0;j<70;j++){
+						out.print('0');	
+						}
+						out.println();
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+			
+	}
+	public void readMap(){
+		File inputFile = new File(mapS);
+		try{
+			input = new BufferedReader(new FileReader(inputFile));
+			String line="";
+			for(int i=0;i<50;i++){
+				line = input.readLine();
+				processLine(line);
+			}
+		}catch(FileNotFoundException e){
+			JOptionPane.showMessageDialog(this, "MAP NOT FOUND");
+		}catch(IOException e){
+			JOptionPane.showMessageDialog(this,e.getStackTrace());
+		}
+		repaint();
+	}
+	private void processLine(String line){
+		
+		
+		for(int i=0;i<line.length();i++){
+			map[row][i]=line.charAt(i)-48;
+		}
+		row++;
+		
+	}
+	@Override
+	public void paint(Graphics g) {
+		// TODO Auto-generated method stub
+		super.paint(g);
+
+		int x=-1,y=0;
+		Image img = null;
+		for(int[] r:map){
+			y=0;
+			x++;
+			for(int c:r){
+				
+				switch(c){
+				case 0:
+					img=dusty.getImage();
+					break;
+				case 1:
+					img=desk.grass.getImage();
+					break;
+				case 2:
+					img = desk.tree.getImage();
+					break;
+				case 3:
+					desk.checkWater(x,y);
+					img=desk.water.getImage();
+					desk.makeZ();
+					break;
+				case 4:
+					desk.deepcheckWater(x, y);
+					img = desk.DeepWater.getImage();
+					desk.makeZ();
+					break;
+				case 5:
+					img=desk.mountain.getImage();
+					break;
+				case 6:
+					img=desk.treeg.getImage();
+					break;
+				}
+				//bf.drawImage(img,x*40,y*40,40,40,null);
+				g.drawImage(img,x*40,y*40,40,40,null);
+				y++;
+			}
+		}
+		//g.drawImage(buffer,0,0,null);
+		desk.lmap.repaint();
+	}
+	public void changeMap(){
+		
+		if(x/40>=0 && y/40>=0){
+			desk.last=map[x/40][y/40];
+			if(desk.last==1)
+				map[x/40][y/40]=6;
+			else
+				map[x/40][y/40]=desk.chNum;
+		}
+		if((x/40)+mapx>=0 && (y/40)+mapy>=0){
+			desk.lmap.map[x/40+mapx][y/40+mapy]=desk.chNum;
+		}
+		else if((x/40)+mapx<0 && (y/40)+mapy>=0){
+			desk.lmap.map[50+(x/40)+mapx][y/40+mapy]=desk.chNum;
+		}
+		else if((y/40)+mapy<0 && (x/40)+mapx>=0){
+			desk.lmap.map[(x/40)+mapx][70+y/40+mapy]=desk.chNum;
+		}
+		else if((x/40)+mapy<0 && (y/40)+mapx<0){
+			desk.lmap.map[50+(x/40)+mapx][70+y/40+mapy]=desk.chNum;
+		}
+		repaint();
+	}
+
+	@Override
+	public void mouseClicked(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		x=arg0.getX();
+		y=arg0.getY();
+		changeMap();
+		
+	}
+	@Override
+	public void mouseEntered(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+	}
+	@Override
+	public void mouseExited(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		mouseEx=10000;
+		mouseEy=10000;
+	}
+	@Override
+	public void mousePressed(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		click=true;
+	}
+	@Override
+	public void mouseReleased(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		click=false;
+	}
+	@Override
+	public void keyPressed(KeyEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public void keyReleased(KeyEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public void keyTyped(KeyEvent e) {
+		// TODO Auto-generated method stub
+		if(e.getKeyChar()=='w'){
+			MoveUp();
+		}
+		if(e.getKeyChar()=='s'){
+			MoveDown();
+		}
+		if(e.getKeyChar()=='d'){
+			MoveRight();
+		}
+		if(e.getKeyChar()=='a'){
+			MoveLeft();
+		}
+	}
+	@Override
+	public void mouseDragged(MouseEvent e) {
+		// TODO Auto-generated method stub
+		x=e.getX();
+		y=e.getY();
+		changeMap();
+		repaint();
+	}
+	@Override
+	public void mouseMoved(MouseEvent e) {
+		// TODO Auto-generated method stub
+		mouseEx=e.getX();
+		mouseEy=e.getY();
+		
+	}
+	
+	public void MoveRight(){
+		if(mapx<33){
+		for(int i=0;i<70;i++)
+			line[i]=map[0][i];
+		for(int i=0;i<49;i++)
+			for(int j=0;j<70;j++)
+				map[i][j]=map[i+1][j];
+		for(int i=0;i<2;i++)
+			for(int j=0;j<70;j++)
+				map[49][j]=line[j];
+		mapx++;
+		desk.lmap.borderx++;
+		repaint();
+		}
+	}
+	public void MoveLeft(){
+		if(mapx>0){
+		for(int i=0;i<70;i++)
+			line[i]=map[49][i];
+		for(int i=48;i>=0;i--)
+			for(int j=0;j<70;j++)
+				map[i+1][j]=map[i][j];
+		for(int i=0;i<2;i++)
+			for(int j=0;j<70;j++)
+				map[0][j]=line[j];
+		mapx--;
+		desk.lmap.borderx--;
+		repaint();
+		}
+	}
+
+	public void MoveUp(){
+		if(mapy>0){
+		int a=-1;
+		for(int i=0;i<50;i++){
+			a=map[i][69];
+			for(int j=68;j>=0;j--){
+				map[i][j+1]=map[i][j];
+			}
+			map[i][0]=a;
+		}
+		desk.lmap.bordery--;
+		mapy--;
+		repaint();
+		}
+	}
+
+	public void MoveDown(){
+		if(mapy<56){
+		int a=-1;
+		for(int i=0;i<50;i++){
+			a=map[i][0];
+			for(int j=0;j<69;j++){
+				map[i][j]=map[i][j+1];
+			}
+			map[i][69]=a;
+		}
+		desk.lmap.bordery++;
+		mapy++;
+		repaint();
+		}
+	}
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		while(true){
+			try {
+				Thread.sleep(400);
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+				if(mouseEy>430 && mouseEy<480){
+					MoveDown();
+				}
+				else if(mouseEy<30 && mouseEy>0){
+					MoveUp();
+				}
+				else if(mouseEx>620 && mouseEx<670){
+					MoveRight();
+				}
+				else if(mouseEx<30 && mouseEx>0){
+					MoveLeft();
+				}
+			
+		}
+			
+		
+	}
+	
+}
