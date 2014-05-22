@@ -1,0 +1,278 @@
+package mapEditor;
+
+import java.awt.FlowLayout;
+import java.awt.Image;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+
+public class MyDesk extends JFrame{
+
+	private String season="Spring";
+	private JComboBox jcb1;
+	private int Deskw,DeskH;
+	private JPanel rightPanel;
+	private JButton jb1,jb2,jb3,jb4,jb5,jb6,jb7; 
+	public int chNum=-1,last;
+	public String sb="";
+	public ImageIcon grass,tree,treeg,water,DeepWater,mountain; 
+	public ImageIcon lgrass,ltree,lwater,lDeepWater,lmountain; 
+	private JFileChooser jfc1,jfc2;
+	private int aroundNum,isU,isR,isD,isL;
+	Map map;
+	LittleMap lmap;
+	LoadLittleMap llmap;
+	LoadMap lomap;
+	Enter enter;
+	
+	public MyDesk(Enter enter) {
+		// TODO Auto-generated constructor stub
+		this.enter=enter;
+		init();
+		FrameSet();
+	}
+	public void init(){
+		aroundNum=0;
+		isD=0;
+		isU=0;
+		isR=0;
+		isL=0;
+		last=0;
+		Deskw=1000;
+		DeskH=800;
+		grass=new ImageIcon("grass.png");
+		checktree();
+		water=new ImageIcon("cwater"+aroundNum+isU+isR+isD+isL+".png");
+		DeepWater = new ImageIcon("cdeep water"+aroundNum+isU+isR+isD+isL+".png");
+		mountain=new ImageIcon("c1.png");
+		lgrass=new ImageIcon("lgrass.png");
+		lwater=new ImageIcon("lwater"+aroundNum+isU+isR+isD+isL+".png");
+		lDeepWater = new ImageIcon("ldeep water"+aroundNum+isU+isR+isD+isL+".png");
+		lmountain=new ImageIcon("l1.png");
+		jfc1=new JFileChooser();
+		jfc2=new JFileChooser();
+		
+			map=new Map(this);
+			lmap=new LittleMap(this);
+		
+	}
+	void checktree(){
+		
+		treeg=new ImageIcon("gtree "+season+".png");
+		tree=new ImageIcon("ctree "+season+".png");
+		ltree=new ImageIcon("ltree "+season+".png");
+	}
+	public void FrameSet(){
+		setSize(Deskw,DeskH);
+		setLocationRelativeTo(null);
+		setLayout(null);
+		setTitle("MAP EDITOR");
+		CreateRightPanel();
+			getContentPane().add(map);
+			getContentPane().add(lmap);
+		
+		jcb1=new JComboBox();
+		jcb1.setSize(200, 100);
+		jcb1.addItem("Spring");
+		jcb1.addItem("Summer");
+		jcb1.addItem("Fall");
+		jcb1.addItem("Winter");
+		jcb1.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
+				season =(String) jcb1.getSelectedItem();
+				checktree();
+				
+			}
+			
+		});
+		jcb1.setFocusable(false);
+		
+		Buttoms(jb1, grass,1);
+		Buttoms(jb2,tree,2);
+		Buttoms(jb3,water,3);
+		Buttoms(jb4, DeepWater, 4);
+		Buttoms(jb5, mountain, 5);
+		jb6=new JButton();
+		jb6.setSize(200, 100);
+		jb6.setText("SAVE");
+		rightPanel.add(jb6);
+		jb6.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				// TODO Auto-generated method stub
+				Save();
+				
+			}
+		});
+		jb7=new JButton();
+		jb7.setSize(200, 100);
+		jb7.setText("Exit");
+		rightPanel.add(jb7);
+		jb7.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				
+				System.exit(0);
+			}
+		});
+		rightPanel.add(jcb1);
+		setDefaultCloseOperation(EXIT_ON_CLOSE);
+		setVisible(true);
+	}
+	public void CreateRightPanel(){
+		rightPanel=new JPanel();
+		rightPanel.setSize(300, 800);
+		rightPanel.setLocation(700, 0);
+		rightPanel.setBorder(BorderFactory.createEtchedBorder());
+		rightPanel.setLayout(new FlowLayout());
+		getContentPane().add(rightPanel);
+	}
+	public void Buttoms(JButton buttom,final ImageIcon img,final int x){
+		buttom = new JButton();
+		buttom.setSize(100,100);
+		buttom.setIcon(img);
+		rightPanel.add(buttom);
+		
+		buttom.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				// TODO Auto-generated method stub
+				chNum=x;
+			}
+		});
+		
+		buttom.setFocusable(false);
+		
+		
+	}
+	
+	public void checkWater(int i,int j){
+		
+		if(i<48 && map.map[i+1][j]==3){
+			isR=2;
+			aroundNum++;
+		}
+		if(i>0 && (map.map[i-1][j]==3)){
+			isL=4;
+			aroundNum++;
+		}
+		if( j<68 && (map.map[i][j+1]==3)){
+			isD=3;
+			aroundNum++;
+		}
+		if( j>0 && (map.map[i][j-1]==3)){
+			isU=1;
+			aroundNum++;
+		}
+			water=new ImageIcon("cwater"+aroundNum+isU+isR+isD+isL+".png");
+	}
+	public void deepcheckWater(int i,int j){
+		if(i<48 && (map.map[i+1][j]==4) ){
+			isR=2;
+			aroundNum++;
+		}
+		if(i>0 && (map.map[i-1][j]==4)){
+			isL=4;
+			aroundNum++;
+		}
+		if( j<68 && (map.map[i][j+1]==4)){
+			isD=3;
+			aroundNum++;
+		}
+		if( j>0 && (map.map[i][j-1]==4)){
+			isU=1;
+			aroundNum++;
+		}
+			DeepWater = new ImageIcon("cdeep water"+aroundNum+isU+isR+isD+isL+".png");
+				
+	}
+	public void lcheckWater(int i,int j){
+		if(i<48 && lmap.map[i+1][j]==3 ){
+			isR=2;
+			aroundNum++;
+		}
+		if(i>0 && (lmap.map[i-1][j]==3)){
+			isL=4;
+			aroundNum++;
+		}
+		if( j<68 && (lmap.map[i][j+1]==3)){
+			isD=3;
+			aroundNum++;
+		}
+		if( j>0 && (lmap.map[i][j-1]==3)){
+			isU=1;
+			aroundNum++;
+		}
+		lwater=new ImageIcon("lwater"+aroundNum+isU+isR+isD+isL+".png");
+		
+	}
+	public void ldeepcheckWater(int i,int j){
+		if(i<48 && (lmap.map[i+1][j]==3) ){
+			isR=2;
+			aroundNum++;
+		}
+		if(i>0 && (lmap.map[i-1][j]==3)){
+			isL=4;
+			aroundNum++;
+		}
+		if( j<68 && (lmap.map[i][j+1]==3)){
+			isD=3;
+			aroundNum++;
+		}
+		if( j>0 && (lmap.map[i][j-1]==3)){
+			isU=1;
+			aroundNum++;
+		}
+		
+			lDeepWater = new ImageIcon("ldeep water"+aroundNum+isU+isR+isD+isL+".png");
+		}
+	public void makeZ(){
+		aroundNum=0;
+		isD=0;
+		isU=0;
+		isR=0;
+		isL=0;
+	}
+	
+	public void Save(){
+		    JFileChooser chooser = new JFileChooser();
+		    chooser.setCurrentDirectory(new File("/parham"));
+		    int retrival = chooser.showSaveDialog(null);
+		    if (retrival == JFileChooser.APPROVE_OPTION) {
+		        try {
+		            FileWriter fw = new FileWriter(chooser.getSelectedFile()+".txt",true);
+		        for(int i=0;i<50;i++){
+		           	for(int j=0;j<70;j++){
+		           		fw.write(lmap.map[i][j]+"");
+		           	}
+		           	fw.write("\r\n");
+		        }
+		           	fw.close();
+		        
+		        } catch (Exception ex) {
+		            ex.printStackTrace();
+		        }
+		        
+		    }
+	}
+}
